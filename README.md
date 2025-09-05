@@ -35,7 +35,7 @@ java HelloWorldServer
    - Add: `DOCKER_HUB_USERNAME` and `DOCKER_HUB_ACCESS_TOKEN`
 
 3. **Deploy:**
-   - Push to `main` branch
+   - Push to `main` branch.
    - GitHub Actions automatically builds and pushes to Docker Hub
 
 ## What It Does
