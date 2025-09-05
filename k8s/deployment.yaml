@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: java-hello-world
+  namespace: java-hello-world
+  labels:
+    app: java-hello-world
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: java-hello-world
+  template:
+    metadata:
+      labels:
+        app: java-hello-world
+    spec:
+      containers:
+      - name: java-hello-world
+        image: IMAGE_PLACEHOLDER
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
