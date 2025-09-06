@@ -422,12 +422,12 @@ jobs:
     - name: Deploy summary
       run: |
         echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Java web server application compiled successfully" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Docker image built and pushed to Docker Hub" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Application deployed to Kubernetes cluster" >> $GITHUB_STEP_SUMMARY
-        echo "🐳 **Image:** \`${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
-        echo "🔗 **Docker Hub:** https://hub.docker.com/r/${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
-        echo "☸️ **Kubernetes:** Deployed to namespace \`java-hello-world\`" >> $GITHUB_STEP_SUMMARY
+        echo "Java web server application compiled successfully" >> $GITHUB_STEP_SUMMARY
+        echo "Docker image built and pushed to Docker Hub" >> $GITHUB_STEP_SUMMARY
+        echo "Application deployed to Kubernetes cluster" >> $GITHUB_STEP_SUMMARY
+        echo "**Image:** \`${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Docker Hub:** https://hub.docker.com/r/${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Kubernetes:** Deployed to namespace \`java-hello-world\`" >> $GITHUB_STEP_SUMMARY
 ```
 **Lines 95-103:** Deployment summary creation:
 - Creates formatted summary for GitHub Actions interface
