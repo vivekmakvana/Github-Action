@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: java-hello-world
-        image: IMAGE_PLACEHOLDER
+        image: vivekmakvana/java-hello-world:latest #IMAGE_PLACEHOLDER
         ports:
         - containerPort: 8080
         resources:
