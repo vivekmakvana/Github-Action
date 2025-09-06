@@ -66,13 +66,14 @@ jobs:
     - name: Configure kubectl
       run: |
         mkdir -p ~/.kube
-        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+        printf '%s\n' "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
         chmod 600 ~/.kube/config
+
         
     - name: Update Kubernetes deployment image
       run: |
         # Replace IMAGE_PLACEHOLDER with actual image
-        sed -i "s|IMAGE_PLACEHOLDER|${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest|g" k8s/deployment.yaml
+        sed -i "s|vivekmakvana/java-hello-world|${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest|g" k8s/deployment.yaml
         
     - name: Deploy to Kubernetes
       run: |
