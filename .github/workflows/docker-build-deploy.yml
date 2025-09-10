@@ -101,3 +101,38 @@ jobs:
         echo "**Image:** \`${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
         echo "**Docker Hub:** https://hub.docker.com/r/${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
         echo "**Kubernetes:** Deployed to namespace \`java-hello-world\`" >> $GITHUB_STEP_SUMMARY
+
+    - name: Notify Slack on successful build
+      if: success() && github.ref == 'refs/heads/main'
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        text: |
+          ✅ Build and deployment completed successfully!
+          
+          **Repository:** ${{ github.repository }}
+          **Branch:** ${{ github.ref_name }}
+          **Commit:** ${{ github.sha }}
+          **Author:** ${{ github.actor }}
+          **Image:** ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+          **Kubernetes:** Deployed to namespace `java-hello-world`
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    - name: Notify Slack on build failure
+      if: failure() && github.ref == 'refs/heads/main'
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        text: |
+          ❌ Build or deployment failed!
+          
+          **Repository:** ${{ github.repository }}
+          **Branch:** ${{ github.ref_name }}
+          **Commit:** ${{ github.sha }}
+          **Author:** ${{ github.actor }}
+          **Workflow:** ${{ github.workflow }}
+          
+          Please check the GitHub Actions logs for details.
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
