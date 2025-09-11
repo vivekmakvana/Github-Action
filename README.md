@@ -1,21 +1,27 @@
-# Java Hello World Web Server - Complete Code Documentation
+# Java Hello World Web Server - Enterprise CI/CD Pipeline
 
-A comprehensive Java web server application with automated Docker containerization and Kubernetes deployment via GitHub Actions CI/CD pipeline.
+A comprehensive Java web server application with enterprise-grade CI/CD pipeline featuring environment separation, security scanning, approval gates, and automated deployments.
 
 ## Project Overview
 
-This project demonstrates a complete DevOps pipeline that:
+This project demonstrates an enterprise-grade DevOps pipeline that:
 - Builds a simple Java HTTP server
-- Containerizes it using Docker
-- Deploys to Kubernetes using GitHub Actions
-- Includes health checks, load balancing, and ingress routing
+- Containerizes it using Docker with security scanning
+- Deploys across multiple environments (Development → Staging → Production)
+- Includes comprehensive testing, health checks, and approval gates
+- Features automated notifications and rollback capabilities
 
 ## Project Structure
 
 ```
 Github-Action-POC/
 ├── .github/workflows/
-│   └── docker-build-deploy.yml    # GitHub Actions CI/CD pipeline
+│   ├── ci-build.yml               # CI: Build, test, scan, publish images
+│   ├── pr-validation.yml          # PR: Validation workflow for pull requests
+│   ├── deploy-dev.yml             # Deploy to development environment
+│   ├── deploy-staging.yml         # Deploy to staging environment
+│   ├── deploy-production.yml      # Deploy to production (manual with approval)
+│   └── docker-build-deploy.yml    # Legacy workflow (deprecated)
 ├── k8s/
 │   ├── namespace.yaml             # Kubernetes namespace definition
 │   ├── deployment.yaml            # Kubernetes deployment configuration
@@ -23,6 +29,7 @@ Github-Action-POC/
 │   └── ingress.yaml               # Kubernetes ingress routing
 ├── Dockerfile                     # Docker container configuration
 ├── HelloWorldServer.java          # Java web server application
+├── DEPLOYMENT_GUIDE.md            # Enterprise deployment guide
 └── README.md                      # This documentation file
 ```
 
@@ -224,9 +231,32 @@ CMD ["java", "HelloWorldServer"]
 - Comment describing container startup command
 - Executes Java application when container starts (exec form for better signal handling)
 
-### 3. GitHub Actions Workflow (.github/workflows/docker-build-deploy.yml)
+### 3. Enterprise CI/CD Pipeline (.github/workflows/)
 
-This file defines the CI/CD pipeline that automatically builds, tests, deploys the application, and sends Slack notifications.
+This project now uses an enterprise-grade CI/CD pipeline with multiple workflows for different purposes:
+
+#### 3.1 PR Build Validation (pr-validation.yml)
+**Purpose**: Validates pull requests before merging
+**Triggers**: Pull requests to main/develop branches only
+
+#### 3.2 CI Build (ci-build.yml)  
+**Purpose**: Builds, tests, scans, and publishes images
+**Triggers**: Push to main, develop, feature/*, hotfix/* branches (NOT PRs)
+
+#### 3.3 Development Deployment (deploy-dev.yml)
+**Purpose**: Auto-deploy to development environment
+**Triggers**: Push to develop branch, manual dispatch
+
+#### 3.4 Staging Deployment (deploy-staging.yml)
+**Purpose**: Auto-deploy to staging for UAT
+**Triggers**: Push to main branch, manual dispatch
+
+#### 3.5 Production Deployment (deploy-production.yml)
+**Purpose**: Controlled production deployments with approval gates
+**Triggers**: Manual dispatch only
+
+#### 3.6 Legacy Workflow (docker-build-deploy.yml)
+This file has been **DEPRECATED** and disabled to prevent accidental production deployments.
 
 ```yaml
 name: Build and Deploy to Docker Hub and Kubernetes
@@ -712,13 +742,44 @@ kubectl get all -n java-hello-world
 kubectl get service java-hello-world-service -n java-hello-world
 ```
 
+## Enterprise CI/CD Features
+
+### Environment Separation
+- **Development**: Auto-deploy on `develop` branch pushes
+- **Staging**: Auto-deploy on `main` branch pushes  
+- **Production**: Manual deployment with approval gates
+
+### Security & Quality Gates
+- **Trivy Security Scanning**: Blocks deployments on critical vulnerabilities
+- **Manual Approval Gates**: Production requires team approval
+- **Blue-Green Deployments**: Zero-downtime production updates
+- **Automatic Rollbacks**: Health check failures trigger rollbacks
+
+### Workflow Trigger Matrix
+| Action | Triggered Workflows |
+|--------|-------------------|
+| Push to `develop` | CI Build → Development Deployment |
+| Push to `main` | CI Build → Staging Deployment |
+| Push to `feature/*` | CI Build only |
+| Push to `hotfix/*` | CI Build only |
+| PR to `main/develop` | PR Build Validation only |
+| Manual production deploy | Production Deployment |
+
 ## GitHub Actions Setup
 
 ### Required Repository Secrets
-1. **DOCKER_HUB_USERNAME** - Your Docker Hub username
-2. **DOCKER_HUB_ACCESS_TOKEN** - Docker Hub access token
-3. **KUBE_CONFIG** - Base64-encoded kubeconfig file
-4. **SLACK_WEBHOOK_URL** - Slack webhook URL for build notifications
+1. **GITHUB_TOKEN** - Automatically provided for container registry
+2. **KUBE_CONFIG_DEV** - Development cluster kubeconfig (base64-encoded)
+3. **KUBE_CONFIG_STAGING** - Staging cluster kubeconfig (base64-encoded) 
+4. **KUBE_CONFIG_PROD** - Production cluster kubeconfig (base64-encoded)
+5. **SLACK_WEBHOOK_URL** - Slack webhook URL for deployment notifications
+
+### Required GitHub Environments
+Create these environments in your repository settings with appropriate protection rules:
+- `development` - No protection needed
+- `staging` - No protection needed
+- `production-approval` - Require approvers (team leads)
+- `production` - Require approvers (senior engineers)
 
 ### Getting Kubernetes Config
 ```bash
@@ -734,33 +795,37 @@ cat ~/.kube/config | base64 -w 0
 5. Add it as `SLACK_WEBHOOK_URL` secret in your GitHub repository
 
 ### Slack Notifications
-The workflow automatically sends Slack notifications for:
-- ✅ **Successful builds and deployments** on main branch
-- ❌ **Failed builds or deployments** on main branch
+The enterprise pipeline sends comprehensive Slack notifications for:
+- ✅ **Successful deployments** to all environments
+- ❌ **Failed deployments** with debugging information
+- 🚀 **Production deployments** with special formatting
+- 📋 **PR validation results** for team visibility
 
 Notifications include:
-- Repository and branch information
-- Commit SHA and author details
-- Docker image details and Kubernetes deployment status
-- Links to GitHub Actions logs for failures
+- Environment and deployment details
+- Image tags and commit information  
+- Health check results and deployment status
+- Direct links to GitHub Actions logs
 
 ## Architecture Overview
 
-### Application Flow
-1. **Source Code**: Java HTTP server with embedded HTML response
-2. **Containerization**: Ubuntu-based Docker image with OpenJDK 17
-3. **CI/CD Pipeline**: GitHub Actions builds and deploys automatically
-4. **Kubernetes Deployment**: 3 replicas with health checks and resource limits
-5. **Load Balancing**: Service distributes traffic across healthy pods
-6. **Ingress Routing**: Domain-based routing with potential SSL termination
+### Enterprise Pipeline Flow
+1. **Feature Development**: Push to feature branches triggers CI builds only
+2. **Pull Request Validation**: PRs trigger validation workflow with comprehensive testing
+3. **Development Deployment**: Merge to `develop` → Auto-deploy to dev environment
+4. **Staging Deployment**: Merge to `main` → Auto-deploy to staging for UAT
+5. **Production Deployment**: Manual trigger with approval gates and blue-green strategy
+6. **Security & Monitoring**: Trivy scanning, health checks, and Slack notifications
 
-### Production Features
-- **High Availability**: 3 replicas ensure service continuity
-- **Health Monitoring**: Liveness and readiness probes
-- **Resource Management**: CPU and memory limits prevent resource starvation
+### Enterprise Features  
+- **Environment Separation**: Isolated dev/staging/production environments
+- **Security First**: Vulnerability scanning blocks risky deployments
+- **Approval Gates**: Manual approvals for production changes
+- **Zero Downtime**: Blue-green deployments with automatic rollback
+- **Comprehensive Testing**: Unit tests, integration tests, load tests
+- **Observability**: Detailed logging, metrics, and notifications
 - **Multi-platform Support**: AMD64 and ARM64 architectures
-- **Automated Deployment**: Push-to-deploy workflow
-- **External Access**: LoadBalancer service and ingress routing
+- **Container Registry**: GitHub Container Registry with proper authentication
 
 ## Troubleshooting
 
@@ -786,4 +851,55 @@ kubectl get endpoints java-hello-world-service -n java-hello-world
 kubectl port-forward service/java-hello-world-service 8080:80 -n java-hello-world
 ```
 
-This documentation provides a complete understanding of every line of code in the project, enabling developers to modify, extend, and maintain the application effectively.
+## Quick Start with Enterprise Pipeline
+
+### 1. Initial Setup
+```bash
+# Clone repository
+git clone <repository-url>
+cd Github-Action-POC
+
+# Create develop branch
+git checkout -b develop
+git push -u origin develop
+```
+
+### 2. Configure GitHub
+1. Set up required secrets and environments (see GitHub Actions Setup section)
+2. Configure branch protection rules for `main` and `develop`
+3. Set up required approvers for production environment
+
+### 3. Development Workflow
+```bash
+# Create feature branch
+git checkout -b feature/my-new-feature
+
+# Make changes and push (triggers CI build only)
+git add .
+git commit -m "Add new feature"
+git push -u origin feature/my-new-feature
+
+# Create PR to develop (triggers PR validation)
+# After review, merge to develop (triggers dev deployment)
+
+# Create PR from develop to main (triggers PR validation) 
+# After review, merge to main (triggers staging deployment)
+
+# For production: Use GitHub Actions UI to manually deploy
+```
+
+### 4. Production Deployment
+1. Go to **Actions** → **Deploy to Production** 
+2. Click **Run workflow**
+3. Enter image tag (e.g., latest commit SHA from staging)
+4. Wait for approvals and monitor deployment
+
+## Migration Guide
+
+If migrating from the old single workflow:
+1. Review the [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for complete setup instructions
+2. The old workflow has been disabled - only runs on manual emergency trigger
+3. Test the new pipeline in development first
+4. Gradually migrate to the new branching strategy
+
+This documentation provides a complete understanding of the enterprise-grade CI/CD pipeline, enabling teams to develop, test, and deploy applications safely and efficiently across multiple environments.

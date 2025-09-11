@@ -19,8 +19,20 @@ This repository now uses an enterprise-grade CI/CD pipeline with proper environm
 
 ## Workflows
 
-### 1. CI Build (`ci-build.yml`)
-**Triggers**: Push to any branch, PRs to main/develop
+### 1. PR Build Validation (`pr-validation.yml`)
+**Triggers**: Pull requests to main/develop branches only
+**Purpose**: Validate code changes before merging
+
+**What it does**:
+- Compiles Java application
+- Runs smoke tests
+- Builds Docker image locally (validation only)
+- Tests Docker container functionality
+- Validates Kubernetes manifests
+- Does NOT publish images (validation only)
+
+### 2. CI Build (`ci-build.yml`)
+**Triggers**: Push to main, develop, feature/*, hotfix/* branches (NOT PRs)
 **Purpose**: Build, test, scan, and publish Docker images
 
 **What it does**:
@@ -31,7 +43,7 @@ This repository now uses an enterprise-grade CI/CD pipeline with proper environm
 - Validates Kubernetes manifests
 - Publishes images to GitHub Container Registry
 
-### 2. Development Deployment (`deploy-dev.yml`)
+### 3. Development Deployment (`deploy-dev.yml`)
 **Triggers**: Push to `develop` branch, manual dispatch
 **Purpose**: Auto-deploy to development environment
 
@@ -41,7 +53,7 @@ This repository now uses an enterprise-grade CI/CD pipeline with proper environm
 - Basic smoke testing
 - Manual deployment option with custom image tags
 
-### 3. Staging Deployment (`deploy-staging.yml`)  
+### 4. Staging Deployment (`deploy-staging.yml`)  
 **Triggers**: Push to `main` branch, manual dispatch
 **Purpose**: Auto-deploy to staging for UAT
 
@@ -52,7 +64,7 @@ This repository now uses an enterprise-grade CI/CD pipeline with proper environm
 - Comprehensive testing (health, load, performance)
 - Manual deployment option with custom image tags
 
-### 4. Production Deployment (`deploy-production.yml`)
+### 5. Production Deployment (`deploy-production.yml`)
 **Triggers**: Manual dispatch only
 **Purpose**: Controlled production deployments
 
@@ -120,17 +132,28 @@ Create these environments in GitHub with protection rules:
 - **Deployment branches**: Limit to `main` branch
 - **Environment secrets**: Production kubeconfig
 
+## Workflow Trigger Summary
+
+| Action | Triggered Workflows |
+|--------|-------------------|
+| Push to `develop` | CI Build → Development Deployment |
+| Push to `main` | CI Build → Staging Deployment |
+| Push to `feature/*` | CI Build only |
+| Push to `hotfix/*` | CI Build only |
+| PR to `main/develop` | PR Build Validation only |
+| Manual production deploy | Production Deployment |
+
 ## Deployment Process
 
 ### Feature Development
 1. Create feature branch: `git checkout -b feature/my-feature`
-2. Push changes - triggers CI build
-3. Create PR to `develop` - triggers PR validation
-4. Merge to `develop` - auto-deploys to development
+2. Push changes - triggers **CI Build** only
+3. Create PR to `develop` - triggers **PR Build Validation** only
+4. Merge to `develop` - triggers **CI Build** → **Development Deployment**
 
 ### Staging Release
-1. Create PR from `develop` to `main`
-2. Review and merge - auto-deploys to staging
+1. Create PR from `develop` to `main` - triggers **PR Build Validation**
+2. Review and merge - triggers **CI Build** → **Staging Deployment**
 3. Perform UAT in staging environment
 
 ### Production Release
