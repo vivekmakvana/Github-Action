@@ -226,7 +226,7 @@ CMD ["java", "HelloWorldServer"]
 
 ### 3. GitHub Actions Workflow (.github/workflows/docker-build-deploy.yml)
 
-This file defines the CI/CD pipeline that automatically builds, tests, and deploys the application.
+This file defines the CI/CD pipeline that automatically builds, tests, deploys the application, and sends Slack notifications.
 
 ```yaml
 name: Build and Deploy to Docker Hub and Kubernetes
@@ -434,6 +434,55 @@ jobs:
 - Uses GitHub-flavored Markdown for rich formatting
 - Includes links and status indicators
 - Provides deployment details for team visibility
+
+```yaml
+    - name: Notify Slack on successful build
+      if: success() && github.ref == 'refs/heads/main'
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        text: |
+          ✅ Build and deployment completed successfully!
+          
+          **Repository:** ${{ github.repository }}
+          **Branch:** ${{ github.ref_name }}
+          **Commit:** ${{ github.sha }}
+          **Author:** ${{ github.actor }}
+          **Image:** ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+          **Kubernetes:** Deployed to namespace `java-hello-world`
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+```
+**Lines 105-120:** Slack success notification:
+- Triggers only on successful builds to main branch
+- Uses community Slack action for webhook integration
+- Includes comprehensive deployment information
+- Formatted with emojis and markdown for readability
+
+```yaml
+    - name: Notify Slack on build failure
+      if: failure() && github.ref == 'refs/heads/main'
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        text: |
+          ❌ Build or deployment failed!
+          
+          **Repository:** ${{ github.repository }}
+          **Branch:** ${{ github.ref_name }}
+          **Commit:** ${{ github.sha }}
+          **Author:** ${{ github.actor }}
+          **Workflow:** ${{ github.workflow }}
+          
+          Please check the GitHub Actions logs for details.
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+```
+**Lines 122-137:** Slack failure notification:
+- Triggers only on failed builds to main branch
+- Provides essential debugging information
+- Directs users to GitHub Actions logs for troubleshooting
+- Uses webhook URL stored in repository secrets
 
 ### 4. Kubernetes Manifests (k8s/ directory)
 
@@ -669,12 +718,31 @@ kubectl get service java-hello-world-service -n java-hello-world
 1. **DOCKER_HUB_USERNAME** - Your Docker Hub username
 2. **DOCKER_HUB_ACCESS_TOKEN** - Docker Hub access token
 3. **KUBE_CONFIG** - Base64-encoded kubeconfig file
+4. **SLACK_WEBHOOK_URL** - Slack webhook URL for build notifications
 
 ### Getting Kubernetes Config
 ```bash
 # Encode your kubeconfig
 cat ~/.kube/config | base64 -w 0
 ```
+
+### Setting up Slack Webhook
+1. Go to your Slack workspace
+2. Navigate to **Apps** → **Incoming Webhooks**
+3. Create a new webhook for your desired channel
+4. Copy the webhook URL (format: `https://hooks.slack.com/services/T.../B.../...`)
+5. Add it as `SLACK_WEBHOOK_URL` secret in your GitHub repository
+
+### Slack Notifications
+The workflow automatically sends Slack notifications for:
+- ✅ **Successful builds and deployments** on main branch
+- ❌ **Failed builds or deployments** on main branch
+
+Notifications include:
+- Repository and branch information
+- Commit SHA and author details
+- Docker image details and Kubernetes deployment status
+- Links to GitHub Actions logs for failures
 
 ## Architecture Overview
 
