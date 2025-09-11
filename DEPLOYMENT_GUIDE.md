@@ -39,7 +39,7 @@ This repository now uses an enterprise-grade CI/CD pipeline with proper environm
 - Compiles Java application
 - Runs smoke tests  
 - Builds multi-platform Docker images
-- Runs security scans with Trivy
+- Runs security scans with Trivy.
 - Validates Kubernetes manifests
 - Publishes images to GitHub Container Registry
 
