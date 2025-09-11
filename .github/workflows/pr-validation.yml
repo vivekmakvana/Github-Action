@@ -53,6 +53,7 @@ jobs:
         context: .
         file: ./Dockerfile
         push: false
+        load: true
         tags: ${{ env.DOCKER_IMAGE_NAME }}:pr-${{ github.event.number }}
         platforms: linux/amd64
         
