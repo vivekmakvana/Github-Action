@@ -1,11 +1,20 @@
-name: Build and Deploy to Docker Hub and Kubernetes
+name: Build and Deploy to Docker Hub and Kubernetes (DEPRECATED)
+# DEPRECATED: This workflow has been replaced by the new enterprise-grade CI/CD pipeline
+# New workflows:
+# - ci-build.yml: Builds and tests on all branches
+# - deploy-dev.yml: Auto-deploys develop branch to development
+# - deploy-staging.yml: Auto-deploys main branch to staging  
+# - deploy-production.yml: Manual production deployments with approval gates
+#
+# This workflow is disabled to prevent accidental production deployments
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deployment (emergency use only)'
+        required: true
+        type: boolean
+        default: false
 
 env:
   DOCKER_IMAGE_NAME: java-hello-world
@@ -13,6 +22,7 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    if: github.event.inputs.force_deploy == 'true'
     
     steps:
     - name: Checkout code
@@ -98,9 +108,9 @@ jobs:
         echo "Java web server application compiled successfully" >> $GITHUB_STEP_SUMMARY
         echo "Docker image built and pushed to Docker Hub" >> $GITHUB_STEP_SUMMARY
         echo "Application deployed to Kubernetes cluster" >> $GITHUB_STEP_SUMMARY
-        echo "**Image:** \`${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
-        echo "**Docker Hub:** https://hub.docker.com/r/${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Kubernetes:** Deployed to namespace \`java-hello-world\`" >> $GITHUB_STEP_SUMMARY
+        echo "Image: \`${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+        echo "Docker Hub: https://hub.docker.com/r/${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
+        echo "Kubernetes: Deployed to namespace \`java-hello-world\`" >> $GITHUB_STEP_SUMMARY
 
     - name: Notify Slack on successful build
       if: success() && github.ref == 'refs/heads/main'
@@ -110,12 +120,12 @@ jobs:
         text: |
           ✅ Build and deployment completed successfully!
           
-          **Repository:** ${{ github.repository }}
-          **Branch:** ${{ github.ref_name }}
-          **Commit:** ${{ github.sha }}
-          **Author:** ${{ github.actor }}
-          **Image:** ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
-          **Kubernetes:** Deployed to namespace `java-hello-world`
+          Repository: ${{ github.repository }}
+          Branch: ${{ github.ref_name }}
+          Commit: ${{ github.sha }}
+          Author: ${{ github.actor }}
+          Image: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+          Kubernetes: Deployed to namespace `java-hello-world`
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
@@ -127,11 +137,11 @@ jobs:
         text: |
           ❌ Build or deployment failed!
           
-          **Repository:** ${{ github.repository }}
-          **Branch:** ${{ github.ref_name }}
-          **Commit:** ${{ github.sha }}
-          **Author:** ${{ github.actor }}
-          **Workflow:** ${{ github.workflow }}
+          Repository: ${{ github.repository }}
+          Branch: ${{ github.ref_name }}
+          Commit: ${{ github.sha }}
+          Author: ${{ github.actor }}
+          Workflow: ${{ github.workflow }}
           
           Please check the GitHub Actions logs for details.
       env:

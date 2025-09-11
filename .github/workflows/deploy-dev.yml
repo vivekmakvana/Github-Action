@@ -1,0 +1,143 @@
+name: Deploy to Development
+
+on:
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag to deploy'
+        required: true
+        default: 'latest'
+
+env:
+  DOCKER_IMAGE_NAME: java-hello-world
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  ENVIRONMENT: development
+
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+    environment: development
+    permissions:
+      contents: read
+      packages: read
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set image tag
+      id: image
+      run: |
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          echo "tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
+        else
+          echo "tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+        
+    - name: Configure kubectl for Development
+      run: |
+        mkdir -p ~/.kube
+        printf '%s\n' "${{ secrets.KUBE_CONFIG_DEV }}" > ~/.kube/config
+        chmod 600 ~/.kube/config
+        
+    - name: Prepare Kubernetes manifests
+      run: |
+        # Create development-specific manifests
+        cp -r k8s k8s-dev
+        
+        # Update namespace for development
+        sed -i 's/name: java-hello-world/name: java-hello-world-dev/g' k8s-dev/*.yaml
+        sed -i 's/namespace: java-hello-world/namespace: java-hello-world-dev/g' k8s-dev/*.yaml
+        
+        # Update image reference
+        sed -i "s|IMAGE_PLACEHOLDER|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.image.outputs.tag }}|g" k8s-dev/deployment.yaml
+        
+        # Add development-specific labels
+        sed -i '/metadata:/a\  labels:\n    environment: development' k8s-dev/*.yaml
+        
+    - name: Deploy to Development AKS
+      run: |
+        echo "Deploying to Development environment..."
+        kubectl apply -f k8s-dev/namespace.yaml
+        kubectl apply -f k8s-dev/deployment.yaml
+        kubectl apply -f k8s-dev/service.yaml
+        kubectl apply -f k8s-dev/ingress.yaml
+        
+    - name: Wait for deployment
+      run: |
+        kubectl wait --for=condition=available --timeout=300s deployment/java-hello-world -n java-hello-world-dev
+        
+    - name: Get deployment status
+      run: |
+        echo "=== Pods ===" 
+        kubectl get pods -n java-hello-world-dev
+        echo "=== Services ===" 
+        kubectl get services -n java-hello-world-dev
+        echo "=== Ingress ===" 
+        kubectl get ingress -n java-hello-world-dev
+        
+    - name: Run smoke tests
+      run: |
+        echo "Running smoke tests against development environment..."
+        
+        # Get the service endpoint
+        EXTERNAL_IP=$(kubectl get service java-hello-world -n java-hello-world-dev -o jsonpath='{.status.loadBalancer.ingress[0].ip}' || echo "")
+        
+        if [[ -z "$EXTERNAL_IP" ]]; then
+          echo "Using port-forward for testing..."
+          kubectl port-forward service/java-hello-world 8080:8080 -n java-hello-world-dev &
+          PORT_FORWARD_PID=$!
+          sleep 10
+          
+          if curl -f http://localhost:8080 --max-time 10; then
+            echo "✅ Development deployment is healthy"
+          else
+            echo "❌ Development deployment health check failed"
+            exit 1
+          fi
+          
+          kill $PORT_FORWARD_PID 2>/dev/null || true
+        else
+          echo "Testing external endpoint: $EXTERNAL_IP"
+          if curl -f http://$EXTERNAL_IP:8080 --max-time 10; then
+            echo "✅ Development deployment is healthy"
+          else
+            echo "❌ Development deployment health check failed"
+            exit 1
+          fi
+        fi
+        
+    - name: Deployment summary
+      run: |
+        echo "## Development Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Deployed to Development AKS cluster" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Smoke tests passed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Environment:** Development" >> $GITHUB_STEP_SUMMARY
+        echo "**Namespace:** \`java-hello-world-dev\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Image:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.image.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+        
+    - name: Notify Slack on successful deployment
+      if: success()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        text: |
+          ✅ Development deployment completed successfully!
+          
+          Repository: ${{ github.repository }}
+          Environment: Development
+          Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.image.outputs.tag }}
+          Namespace: java-hello-world-dev
+          
+          Deployment is ready for testing!
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
