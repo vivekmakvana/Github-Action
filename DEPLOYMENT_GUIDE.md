@@ -33,13 +33,12 @@ This repository now uses an enterprise-grade CI/CD pipeline with proper environm
 
 ### 2. CI Build (`ci-build.yml`)
 **Triggers**: Push to main, develop, feature/*, hotfix/* branches (NOT PRs)
-**Purpose**: Build, test, scan, and publish Docker images
+**Purpose**: Build, test, and publish Docker images
 
 **What it does**:
 - Compiles Java application
 - Runs smoke tests  
 - Builds multi-platform Docker images
-- Runs security scans with Trivy
 - Validates Kubernetes manifests
 - Publishes images to GitHub Container Registry
 
@@ -70,7 +69,7 @@ This repository now uses an enterprise-grade CI/CD pipeline with proper environm
 
 **Features**:
 - **Manual approval required** (unless emergency override)
-- Image validation and security scanning
+- Image validation
 - Blue-green deployment strategy
 - Production configuration (3 replicas, resource limits)
 - Comprehensive health checks with rollback capability
@@ -79,10 +78,8 @@ This repository now uses an enterprise-grade CI/CD pipeline with proper environm
 ## Security Features
 
 ### Image Security
-- Trivy security scanning on all builds
-- SARIF upload to GitHub Security tab
-- Production deployment blocked on CRITICAL/HIGH vulnerabilities
 - Container registry authentication
+- GitHub Container Registry integration
 
 ### Access Control
 - GitHub environments with protection rules

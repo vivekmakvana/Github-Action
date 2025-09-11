@@ -1,12 +1,12 @@
 # Java Hello World Web Server - Enterprise CI/CD Pipeline
 
-A comprehensive Java web server application with enterprise-grade CI/CD pipeline featuring environment separation, security scanning, approval gates, and automated deployments.
+A comprehensive Java web server application with enterprise-grade CI/CD pipeline featuring environment separation, approval gates, and automated deployments.
 
 ## Project Overview
 
 This project demonstrates an enterprise-grade DevOps pipeline that:
 - Builds a simple Java HTTP server
-- Containerizes it using Docker with security scanning
+- Containerizes it using Docker
 - Deploys across multiple environments (Development → Staging → Production)
 - Includes comprehensive testing, health checks, and approval gates
 - Features automated notifications and rollback capabilities
@@ -750,7 +750,6 @@ kubectl get service java-hello-world-service -n java-hello-world
 - **Production**: Manual deployment with approval gates
 
 ### Security & Quality Gates
-- **Trivy Security Scanning**: Blocks deployments on critical vulnerabilities
 - **Manual Approval Gates**: Production requires team approval
 - **Blue-Green Deployments**: Zero-downtime production updates
 - **Automatic Rollbacks**: Health check failures trigger rollbacks
@@ -815,11 +814,10 @@ Notifications include:
 3. **Development Deployment**: Merge to `develop` → Auto-deploy to dev environment
 4. **Staging Deployment**: Merge to `main` → Auto-deploy to staging for UAT
 5. **Production Deployment**: Manual trigger with approval gates and blue-green strategy
-6. **Security & Monitoring**: Trivy scanning, health checks, and Slack notifications
+6. **Monitoring & Notifications**: Health checks and Slack notifications
 
 ### Enterprise Features  
 - **Environment Separation**: Isolated dev/staging/production environments
-- **Security First**: Vulnerability scanning blocks risky deployments
 - **Approval Gates**: Manual approvals for production changes
 - **Zero Downtime**: Blue-green deployments with automatic rollback
 - **Comprehensive Testing**: Unit tests, integration tests, load tests
