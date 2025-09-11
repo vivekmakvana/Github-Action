@@ -1,0 +1,140 @@
+name: PR Build Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+    types: [opened, synchronize, reopened]
+
+env:
+  DOCKER_IMAGE_NAME: java-hello-world
+
+jobs:
+  validate-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Java JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Compile Java application
+      run: javac HelloWorldServer.java
+      
+    - name: Run basic smoke test
+      run: |
+        echo "Starting Java application in background..."
+        timeout 10s java HelloWorldServer &
+        APP_PID=$!
+        sleep 3
+        
+        echo "Testing if application responds..."
+        if curl -f http://localhost:8080 --max-time 5; then
+          echo "✅ Application is responding correctly"
+        else
+          echo "❌ Application failed to respond"
+          exit 1
+        fi
+        
+        kill $APP_PID 2>/dev/null || true
+        
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Build Docker image (validation only)
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: false
+        tags: ${{ env.DOCKER_IMAGE_NAME }}:pr-${{ github.event.number }}
+        platforms: linux/amd64
+        
+    - name: Test Docker image
+      run: |
+        echo "Testing Docker image..."
+        docker run -d -p 8080:8080 --name test-container ${{ env.DOCKER_IMAGE_NAME }}:pr-${{ github.event.number }}
+        sleep 5
+        
+        if curl -f http://localhost:8080 --max-time 10; then
+          echo "✅ Docker image is working correctly"
+        else
+          echo "❌ Docker image failed to respond"
+          docker logs test-container
+          exit 1
+        fi
+        
+        docker stop test-container
+        docker rm test-container
+        
+    - name: Validate Kubernetes manifests
+      run: |
+        echo "Validating Kubernetes manifests..."
+        
+        if [ ! -f "k8s/deployment.yaml" ]; then
+          echo "❌ Missing k8s/deployment.yaml"
+          exit 1
+        fi
+        
+        if [ ! -f "k8s/service.yaml" ]; then
+          echo "❌ Missing k8s/service.yaml"
+          exit 1
+        fi
+        
+        if [ ! -f "k8s/namespace.yaml" ]; then
+          echo "❌ Missing k8s/namespace.yaml"
+          exit 1
+        fi
+        
+        echo "✅ All required Kubernetes manifests are present"
+        
+    - name: PR validation summary
+      run: |
+        echo "## PR Build Validation Results" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Java application compiled successfully" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Application smoke test passed" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Docker image built successfully" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Docker container test passed" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Kubernetes manifests validated" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "** PR #${{ github.event.number }} is ready for review and merge!**" >> $GITHUB_STEP_SUMMARY
+        
+    - name: Notify Slack on PR validation success
+      if: success()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        text: |
+          ✅ PR validation completed successfully!
+          
+          Repository: ${{ github.repository }}
+          PR: #${{ github.event.number }} - ${{ github.event.pull_request.title }}
+          Author: ${{ github.event.pull_request.user.login }}
+          Branch: ${{ github.head_ref }} → ${{ github.base_ref }}
+          
+          All build validations passed - PR is ready for review!
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    - name: Notify Slack on PR validation failure
+      if: failure()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        text: |
+          ❌ PR validation failed!
+          
+          Repository: ${{ github.repository }}
+          PR: #${{ github.event.number }} - ${{ github.event.pull_request.title }}
+          Author: ${{ github.event.pull_request.user.login }}
+          Branch: ${{ github.head_ref }} → ${{ github.base_ref }}
+          
+          Please fix the build issues before merging.
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
