@@ -14,7 +14,6 @@ This repository now uses an enterprise-grade CI/CD pipeline with proper environm
 
 ### Environment Mapping
 - **Development**: `develop` branch → Auto-deploy
-- **Staging**: `main` branch → Auto-deploy  
 - **Production**: Manual deployment only (any image tag)
 
 ## Workflows
@@ -52,18 +51,7 @@ This repository now uses an enterprise-grade CI/CD pipeline with proper environm
 - Basic smoke testing
 - Manual deployment option with custom image tags
 
-### 4. Staging Deployment (`deploy-staging.yml`)  
-**Triggers**: Push to `main` branch, manual dispatch
-**Purpose**: Auto-deploy to staging for UAT
-
-**Features**:
-- Automatic deployment on main branch updates
-- Staging-specific namespace (`java-hello-world-staging`) 
-- Increased replica count (2 replicas)
-- Comprehensive testing (health, load, performance)
-- Manual deployment option with custom image tags
-
-### 5. Production Deployment (`deploy-production.yml`)
+### 4. Production Deployment (`deploy-production.yml`)
 **Triggers**: Manual dispatch only
 **Purpose**: Controlled production deployments
 
@@ -102,7 +90,6 @@ Set these secrets in your GitHub repository:
 
 ### Kubernetes Access
 - `KUBE_CONFIG_DEV` - Development cluster kubeconfig
-- `KUBE_CONFIG_STAGING` - Staging cluster kubeconfig  
 - `KUBE_CONFIG_PROD` - Production cluster kubeconfig
 
 ### Notifications
@@ -113,10 +100,6 @@ Set these secrets in your GitHub repository:
 Create these environments in GitHub with protection rules:
 
 ### `development`
-- No protection rules needed
-- Auto-deployment allowed
-
-### `staging`  
 - No protection rules needed
 - Auto-deployment allowed
 
@@ -134,7 +117,7 @@ Create these environments in GitHub with protection rules:
 | Action | Triggered Workflows |
 |--------|-------------------|
 | Push to `develop` | CI Build → Development Deployment |
-| Push to `main` | CI Build → Staging Deployment |
+| Push to `main` | CI Build only |
 | Push to `feature/*` | CI Build only |
 | Push to `hotfix/*` | CI Build only |
 | PR to `main/develop` | PR Build Validation only |
@@ -148,10 +131,10 @@ Create these environments in GitHub with protection rules:
 3. Create PR to `develop` - triggers **PR Build Validation** only
 4. Merge to `develop` - triggers **CI Build** → **Development Deployment**
 
-### Staging Release
+### Main Branch Updates
 1. Create PR from `develop` to `main` - triggers **PR Build Validation**
-2. Review and merge - triggers **CI Build** → **Staging Deployment**
-3. Perform UAT in staging environment
+2. Review and merge - triggers **CI Build** only
+3. Code is now ready for production deployment
 
 ### Production Release
 1. Go to Actions → "Deploy to Production"
