@@ -3,8 +3,7 @@ name: CI - Build and Test
 on:
   push:
     branches: [ main, develop, 'feature/*', 'hotfix/*' ]
-  pull_request:
-    branches: [ main, develop ]
+    # Note: PR validation workflow handles PR builds
 
 env:
   DOCKER_IMAGE_NAME: java-hello-world
