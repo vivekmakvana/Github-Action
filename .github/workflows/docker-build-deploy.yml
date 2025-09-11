@@ -3,7 +3,6 @@ name: Build and Deploy to Docker Hub and Kubernetes (DEPRECATED)
 # New workflows:
 # - ci-build.yml: Builds and tests on all branches
 # - deploy-dev.yml: Auto-deploys develop branch to development
-# - deploy-staging.yml: Auto-deploys main branch to staging  
 # - deploy-production.yml: Manual production deployments with approval gates
 #
 # This workflow is disabled to prevent accidental production deployments

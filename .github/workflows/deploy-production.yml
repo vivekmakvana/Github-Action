@@ -56,7 +56,7 @@ jobs:
         echo "**Image to deploy:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.image_tag }}\`" >> $GITHUB_STEP_SUMMARY
         echo "**Requested by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "Please review the staging deployment before approving." >> $GITHUB_STEP_SUMMARY
+        echo "Please review the development deployment before approving." >> $GITHUB_STEP_SUMMARY
 
   deploy-production:
     runs-on: ubuntu-latest

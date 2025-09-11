@@ -16,10 +16,9 @@ This project demonstrates an enterprise-grade DevOps pipeline that:
 ```
 Github-Action-POC/
 ├── .github/workflows/
-│   ├── ci-build.yml               # CI: Build, test, scan, publish images
+│   ├── ci-build.yml               # CI: Build, test, publish images
 │   ├── pr-validation.yml          # PR: Validation workflow for pull requests
 │   ├── deploy-dev.yml             # Deploy to development environment
-│   ├── deploy-staging.yml         # Deploy to staging environment
 │   ├── deploy-production.yml      # Deploy to production (manual with approval)
 │   └── docker-build-deploy.yml    # Legacy workflow (deprecated)
 ├── k8s/
@@ -247,11 +246,7 @@ This project now uses an enterprise-grade CI/CD pipeline with multiple workflows
 **Purpose**: Auto-deploy to development environment
 **Triggers**: Push to develop branch, manual dispatch
 
-#### 3.4 Staging Deployment (deploy-staging.yml)
-**Purpose**: Auto-deploy to staging for UAT
-**Triggers**: Push to main branch, manual dispatch
-
-#### 3.5 Production Deployment (deploy-production.yml)
+#### 3.4 Production Deployment (deploy-production.yml)
 **Purpose**: Controlled production deployments with approval gates
 **Triggers**: Manual dispatch only
 
@@ -746,7 +741,6 @@ kubectl get service java-hello-world-service -n java-hello-world
 
 ### Environment Separation
 - **Development**: Auto-deploy on `develop` branch pushes
-- **Staging**: Auto-deploy on `main` branch pushes  
 - **Production**: Manual deployment with approval gates
 
 ### Security & Quality Gates
@@ -758,7 +752,7 @@ kubectl get service java-hello-world-service -n java-hello-world
 | Action | Triggered Workflows |
 |--------|-------------------|
 | Push to `develop` | CI Build → Development Deployment |
-| Push to `main` | CI Build → Staging Deployment |
+| Push to `main` | CI Build only |
 | Push to `feature/*` | CI Build only |
 | Push to `hotfix/*` | CI Build only |
 | PR to `main/develop` | PR Build Validation only |
@@ -769,14 +763,12 @@ kubectl get service java-hello-world-service -n java-hello-world
 ### Required Repository Secrets
 1. **GITHUB_TOKEN** - Automatically provided for container registry
 2. **KUBE_CONFIG_DEV** - Development cluster kubeconfig (base64-encoded)
-3. **KUBE_CONFIG_STAGING** - Staging cluster kubeconfig (base64-encoded) 
-4. **KUBE_CONFIG_PROD** - Production cluster kubeconfig (base64-encoded)
-5. **SLACK_WEBHOOK_URL** - Slack webhook URL for deployment notifications
+3. **KUBE_CONFIG_PROD** - Production cluster kubeconfig (base64-encoded)
+4. **SLACK_WEBHOOK_URL** - Slack webhook URL for deployment notifications
 
 ### Required GitHub Environments
 Create these environments in your repository settings with appropriate protection rules:
 - `development` - No protection needed
-- `staging` - No protection needed
 - `production-approval` - Require approvers (team leads)
 - `production` - Require approvers (senior engineers)
 
@@ -812,12 +804,11 @@ Notifications include:
 1. **Feature Development**: Push to feature branches triggers CI builds only
 2. **Pull Request Validation**: PRs trigger validation workflow with comprehensive testing
 3. **Development Deployment**: Merge to `develop` → Auto-deploy to dev environment
-4. **Staging Deployment**: Merge to `main` → Auto-deploy to staging for UAT
-5. **Production Deployment**: Manual trigger with approval gates and blue-green strategy
-6. **Monitoring & Notifications**: Health checks and Slack notifications
+4. **Production Deployment**: Manual trigger with approval gates and blue-green strategy
+5. **Monitoring & Notifications**: Health checks and Slack notifications
 
 ### Enterprise Features  
-- **Environment Separation**: Isolated dev/staging/production environments
+- **Environment Separation**: Isolated development and production environments
 - **Approval Gates**: Manual approvals for production changes
 - **Zero Downtime**: Blue-green deployments with automatic rollback
 - **Comprehensive Testing**: Unit tests, integration tests, load tests
@@ -881,7 +872,7 @@ git push -u origin feature/my-new-feature
 # After review, merge to develop (triggers dev deployment)
 
 # Create PR from develop to main (triggers PR validation) 
-# After review, merge to main (triggers staging deployment)
+# After review, merge to main (triggers CI build only)
 
 # For production: Use GitHub Actions UI to manually deploy
 ```
@@ -889,7 +880,7 @@ git push -u origin feature/my-new-feature
 ### 4. Production Deployment
 1. Go to **Actions** → **Deploy to Production** 
 2. Click **Run workflow**
-3. Enter image tag (e.g., latest commit SHA from staging)
+3. Enter image tag (e.g., latest commit SHA from main branch)
 4. Wait for approvals and monitor deployment
 
 ## Migration Guide
