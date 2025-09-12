@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repository now uses an enterprise-grade CI/CD pipeline with proper environment separation, security scanning, and approval gates.
+This repository now uses an enterprise-grade CI/CD pipeline with proper environment separation and approval gates.
 
 ## Branching Strategy
 
@@ -152,14 +152,12 @@ Create these environments in GitHub with protection rules:
 
 ### Slack Notifications
 - Development deployments: Success notifications
-- Staging deployments: Success notifications  
 - Production deployments: Success AND failure notifications
 - All notifications include environment, image tag, and deployment details
 
 ### GitHub Summaries
 Each workflow provides detailed summaries including:
 - Build results and test status
-- Security scan results
 - Deployment details (namespace, replicas, image)
 - Health check results
 
@@ -194,6 +192,5 @@ The old `docker-build-deploy.yml` has been deprecated and disabled to prevent ac
 
 To fully migrate:
 1. Test the new workflows in development
-2. Verify staging deployments work correctly  
-3. Perform initial production deployment
-4. Remove or archive the old workflow file
+2. Perform initial production deployment
+3. Remove or archive the old workflow file

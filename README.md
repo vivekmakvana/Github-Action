@@ -7,7 +7,7 @@ A comprehensive Java web server application with enterprise-grade CI/CD pipeline
 This project demonstrates an enterprise-grade DevOps pipeline that:
 - Builds a simple Java HTTP server
 - Containerizes it using Docker
-- Deploys across multiple environments (Development → Staging → Production)
+- Deploys across multiple environments (Development → Production)
 - Includes comprehensive testing, health checks, and approval gates
 - Features automated notifications and rollback capabilities
 

@@ -8,7 +8,7 @@ on:
 env:
   DOCKER_IMAGE_NAME: java-hello-world
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository_owner }}/java-hello-world
 
 jobs:
   test-and-build:
@@ -16,7 +16,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-      security-events: write
     
     steps:
     - name: Checkout code
@@ -81,7 +80,6 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
         
-        
     - name: Validate Kubernetes manifests
       run: |
         echo "Validating Kubernetes manifests..."
@@ -89,8 +87,8 @@ jobs:
         for file in k8s/*.yaml; do
           if [[ -f "$file" ]]; then
             echo "Validating $file..."
-            # Basic YAML syntax check
-            python3 -c "import yaml; yaml.safe_load(open('$file'))"
+            # Basic YAML syntax check using yq (pre-installed on GitHub runners)
+            yq eval . "$file" > /dev/null
           fi
         done
         
